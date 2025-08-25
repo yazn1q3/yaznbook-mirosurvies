@@ -159,6 +159,37 @@ app.put("/boards/:id", async (req, res) => {
   }
 });
 
+app.get("/profile/:id", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) return res.status(400).json({ error: "Invalid user ID" });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        description: true,
+        profileImageUrl: true,
+        coverImageUrl: true,
+        playlists: { select: { id: true, title: true } },
+        pagesOwned: { select: { id: true, title: true } },
+        products: { select: { id: true, name: true, price: true } },
+        posts: { select: { id: true, title: true, content: true } },
+        createdAt: true,
+      },
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 // === GET /store ===
 // جلب متجر + منتجاته
