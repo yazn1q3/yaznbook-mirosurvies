@@ -1,0 +1,20 @@
+{
+  "name": "b-y",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "decimal.js": "^10.6.0",
+    "expr-eval": "^2.0.2",
+    "express": "^5.1.0",
+    "fraction.js": "^5.3.4",
+    "rss-parser": "^3.13.0"
+  }
+}
