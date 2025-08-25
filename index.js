@@ -87,6 +87,49 @@ app.post("/store", async (req, res) => {
   }
 });
 
+app.get("/api/products", async (req, res) => {
+const tag = typeof req.query.tag === "string" ? req.query.tag : undefined;
+const page = parseInt(typeof req.query.page === "string" ? req.query.page : "1", 10);
+const limit = parseInt(typeof req.query.limit === "string" ? req.query.limit : "10", 10);
+
+
+  const skip = (page - 1) * limit;
+
+  try {
+    const products = await prisma.product.findMany({
+      where: tag
+        ? {
+            tags: { some: { name: tag } },
+          }
+        : undefined,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+      include: {
+        seller: true,
+        tags: true,
+        reviews: true,
+        comments: true,
+      },
+    });
+
+    const total = await prisma.product.count({
+      where: tag ? { tags: { some: { name: tag } } } : undefined,
+    });
+
+    res.json({
+      products,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch products", details: String(err) });
+  }
+});
+
 // === GET /store ===
 // جلب متجر + منتجاته
 app.get("/store", async (req, res) => {
