@@ -3,6 +3,7 @@ import { Parser as MathParser } from "expr-eval";
 import Decimal from "decimal.js";
 import Fraction from "fraction.js";
 import Parser from "rss-parser";
+import cors from "cors";  // <--- ده المطلوب
 
 const app = express();
 app.use(express.json());
