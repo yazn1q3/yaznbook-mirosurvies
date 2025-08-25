@@ -6,7 +6,7 @@ import Parser from "rss-parser";
 
 const app = express();
 app.use(express.json());
-
+app.use(cors());
 // === SimpleMath ===
 class SimpleMath {
   constructor() {
