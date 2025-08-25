@@ -5,6 +5,7 @@ import Fraction from "fraction.js";
 import Parser from "rss-parser";
 import cors from "cors";  // <--- ده المطلوب
 import { PrismaClient } from "@prisma/client";
+import NodeCache from "node-cache";
 const cache = new NodeCache({ stdTTL: 30, checkperiod: 60 }); // cache 30s
 const prisma = new PrismaClient();
 const app = express();
