@@ -141,6 +141,23 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
+app.put("/boards/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description } = req.body;
+
+    const board = await prisma.board.update({
+      where: { id: parseInt(id) },
+      data: { title, description },
+    });
+
+    res.json(board);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 
 // === GET /store ===
 // جلب متجر + منتجاته
