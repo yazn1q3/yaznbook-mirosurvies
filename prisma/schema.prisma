@@ -1,0 +1,442 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         Int        @id @default(autoincrement())
+  email      String     @unique
+  password   String
+    postcomments    PostComment[] // ⚡ لازم نضيف الطرف المقابل هنا
+  likedPosts  LikePost[]    // ⚡ ولازم نضيف الطرف المقابل هنا
+  description  String?
+pagesOwned   Page[]       @relation("UserPagesOwned")      // الصفحات اللي المستخدم مالكها
+  pagesFollowed PageFollower[] // الصفحات اللي المستخدم عامل لها follow
+    profileImageUrl  String?    // ← رابط صورة المستخدم
+  coverImageUrl    String?    // ← صورة غلاف (اختياري)
+    playlists  Playlist[] @relation("UserPlaylists") // ✅ حقل عكسي للـ Playlist
+  songs     Song[]  @relation("UserSongs")
+    wantInReturnComments WantInReturnComment[]
+  tabadls Tabadl[]
+cardLists CardList[]  @relation("UserCardLists")
+  cards      Card[]     @relation("UserCards")
+  notifications  Notification[] // ← تربط بالإشعارات المتعلقة بالتعليق
+  orders   Order[]
+  searchHistory SearchHistory[]
+    productViews  ProductView[]  // ← ضيفنا حقل عكسي
+  name       String?
+  messagesSent     Message[] @relation("MessagesSent")
+  messagesReceived Message[] @relation("MessagesReceived")
+  phone      String?
+store    Store? 
+    storeId      Int?      @unique
+  products   Product[]
+    profiles   Profile[]
+  boards   Board[] @relation("UserBoards")  // ← هنا الطرف العكسي
+  reviews    Review[]
+  cart       Cart?
+  mfsVerified    Boolean  @default(false)
+  recoveryPhrase   String?
+  comments   Comment[]
+  posts   Post[]
+  productLists ProductList[]
+  applications Application[]  
+  reports    Report[] 
+  createdAt  DateTime   @default(now())
+}
+
+model Application {
+  id          Int      @id @default(autoincrement())
+  name        String   // اسم التطبيق
+  description String?  // وصف للتطبيق
+  websiteUrl  String?  // رابط الموقع
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int      // صاحب التطبيق
+  createdAt   DateTime @default(now())
+}
+
+
+model Board {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  
+  owner       User       @relation("UserBoards", fields: [ownerId], references: [id])
+    ownerId     Int
+  lists       CardList[] // كل الـ Lists اللي داخل الـ Board
+  createdAt   DateTime   @default(now())
+}
+
+
+model Store {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+    image       String?
+  owner    User   @relation(fields: [ownerId], references: [id])
+  ownerId  Int    @unique  // كل مستخدم يمكن أن يمتلك متجر واحد فقط
+  products    Product[] // المنتجات المرتبطة بالمتجر
+  links       String[]  // روابط خاصة بالمتجر
+  createdAt   DateTime  @default(now())
+}
+
+model Profile {
+  id          Int      @id @default(autoincrement())
+  name        String   // اسم البروفايل (مثل: "يزن" أو "أطفال")
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+  createdAt   DateTime @default(now())
+}
+
+model SearchHistory {
+  id        Int      @id @default(autoincrement())
+  query     String   @db.Text
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+
+
+model ProductList {
+  id        Int       @id @default(autoincrement())
+  title     String
+  owner     User      @relation(fields: [ownerId], references: [id])
+  ownerId   Int
+  products  Product[] @relation("ListProducts") // ✅ بدون references
+  createdAt DateTime  @default(now())
+}
+
+
+
+model Tabadl {
+  id              String      @id @default(cuid())
+  title           String
+  description     String
+  images          String[]
+  wantsInReturn   String      // الوصف الأساسي
+  user            User        @relation(fields: [userId], references: [id])
+  userId          Int
+  createdAt       DateTime    @default(now())
+  
+  returnComments  WantInReturnComment[]  // ربط بالتعليقات
+}
+
+model WantInReturnComment {
+  id          String   @id @default(cuid())
+  content     String
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+  tabadl      Tabadl   @relation(fields: [tabadlId], references: [id])
+  tabadlId    String
+  createdAt   DateTime @default(now())
+}
+
+model PostComment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+}
+
+model LikePost {
+  id        Int      @id @default(autoincrement())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId]) // كل مستخدم يعجب بالبوست مرة واحدة
+}
+
+
+
+
+model Tag {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[] @relation("ProductTags")
+}
+
+model Review {
+  id         Int       @id @default(autoincrement())
+  rating     Int       // تقييم من 1 إلى 5
+  comment    String?
+  product    Product   @relation(fields: [productId], references: [id])
+  productId  Int
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  createdAt  DateTime  @default(now())
+}
+
+
+model Report {
+  id          Int       @id @default(autoincrement())
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   Int
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  reason      String    
+  description String?  
+  createdAt   DateTime  @default(now())
+}
+
+model VisitorIP {
+  id        Int      @id @default(autoincrement())
+  ip        String
+  userAgent String?  
+  createdAt DateTime @default(now())
+}
+
+model SearchQuery {
+  id        Int      @id @default(autoincrement())
+  query     String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  from      User     @relation("MessagesSent", fields: [fromId], references: [id])
+  fromId    Int
+  to        User     @relation("MessagesReceived", fields: [toId], references: [id])
+  toId      Int
+  content   String
+  createdAt DateTime @default(now())
+}
+
+
+model Ad {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  advertiser   String   
+  url          String
+  image        String?  
+  datePosted   DateTime @default(now())
+  validFrom    DateTime
+  validThrough DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  user      User       @relation(fields: [userId], references: [id])
+  userId    Int        @unique
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model ProductView {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  viewedAt  DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  cartId    Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int      @default(1)
+  addedAt   DateTime @default(now())
+
+  @@unique([cartId, productId])
+}
+
+model Post {
+  id         Int           @id @default(autoincrement())
+  content    String
+  user       User          @relation(fields: [userId], references: [id])
+  userId     Int
+    page      Page?     @relation(fields: [pageId], references: [id])
+  pageId    Int?
+  createdAt  DateTime      @default(now())
+  
+  comments   PostComment[] // ربط التعليقات
+  likes      LikePost[]    // ربط الإعجابات
+}
+
+
+model Page {
+  id          Int      @id @default(autoincrement())
+  name        String   // اسم الصفحة
+  description String?
+  owner       User     @relation("UserPagesOwned", fields: [ownerId], references: [id])
+  ownerId     Int
+  posts       Post[]   // بوستات الصفحة
+  followers   PageFollower[] // من عمل فولو للصفحة
+  createdAt   DateTime @default(now())
+}
+
+model PageFollower {
+  id     Int  @id @default(autoincrement())
+  page   Page @relation(fields: [pageId], references: [id])
+  pageId Int
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+  createdAt DateTime @default(now())
+
+  @@unique([pageId, userId]) // كل مستخدم ممكن يعمل فولو مرة واحدة
+}
+
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     Int
+  items      OrderItem[]
+  total      Float
+  status     String      @default("pending") // pending, paid, shipped, completed
+  country    String      // الدولة
+  address    String      // العنوان
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int      @default(1)
+  price     Float    // سعر المنتج وقت الطلب
+}
+
+model CardList {
+  id      Int      @id @default(autoincrement())
+  title   String
+  board   Board?   @relation(fields: [boardId], references: [id])
+  boardId Int?
+  owner   User     @relation("UserCardLists", fields: [ownerId], references: [id])
+  ownerId Int
+  cards   Card[]
+  createdAt DateTime @default(now())
+}
+
+
+
+
+
+model Card {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  list      CardList @relation(fields: [listId], references: [id])
+  listId    Int
+  owner     User     @relation("UserCards", fields: [ownerId], references: [id])
+  ownerId   Int
+  position  Int      @default(0)   // ✅ ترتيب الكرت داخل القائمة
+  createdAt DateTime @default(now())
+}
+
+enum NotificationType {
+  ORDER      // طلب جديد
+  MESSAGE    // رسالة من مستخدم
+  SYSTEM     // إشعار نظامي
+  COMMENT    // تعليق على منتجك
+}
+
+model Product {
+  id          Int             @id @default(autoincrement())
+  title       String
+  description String?
+  notifications Notification[] @relation("ProductNotifications") // ← ربط مع Notification
+  orderItems  OrderItem[]
+  price       Float
+  views       ProductView[]
+  image       String?
+    store       Store?    @relation(fields: [storeId], references: [id])
+  storeId     Int?
+  seller      User             @relation(fields: [sellerId], references: [id])
+  sellerId    Int
+  createdAt   DateTime         @default(now())
+  isSold      Boolean          @default(false)
+  tags        Tag[]            @relation("ProductTags")
+  reviews     Review[]
+  comments    Comment[]
+  lists       ProductList[]    @relation("ListProducts")
+  reports     Report[]
+  cartItems   CartItem[]
+  paypalLink  String?
+}
+
+model Comment {
+  id            Int             @id @default(autoincrement())
+  content       String
+  product       Product         @relation(fields: [productId], references: [id])
+  productId     Int
+  notifications Notification[]  @relation("CommentNotifications") // ← ربط مع Notification
+  user          User            @relation(fields: [userId], references: [id])
+  userId        Int
+  createdAt     DateTime        @default(now())
+}
+
+model Notification {
+  id        Int        @id @default(autoincrement())
+  user      User       @relation(fields: [userId], references: [id])
+  userId    Int
+  type      NotificationType
+  content   String
+  read      Boolean    @default(false)
+  
+  product   Product?   @relation("ProductNotifications", fields: [productId], references: [id])
+  productId Int?
+  
+  comment   Comment?   @relation("CommentNotifications", fields: [commentId], references: [id])
+  commentId Int?
+  
+  createdAt DateTime   @default(now())
+}
+
+
+model Song {
+  id        Int      @id @default(autoincrement())
+  title     String
+  url       String    // رابط الأغنية
+  coverUrl  String?   // رابط الغلاف، اختياري
+  artist    User    @relation("UserSongs", fields: [artistId], references: [id])
+  artistId  Int
+  description String?
+  plays     Int       @default(0)
+  playlists   SongOnPlaylist[]  // ✅ ربط الأغنية مع قوائم التشغيل
+  createdAt DateTime  @default(now())
+}
+
+model Playlist {
+  id        Int      @id @default(autoincrement())
+  title     String
+  owner   User   @relation("UserPlaylists", fields: [ownerId], references: [id])
+    ownerId   Int
+  songs     SongOnPlaylist[]
+  createdAt DateTime @default(now())
+}
+
+model SongOnPlaylist {
+  id         Int      @id @default(autoincrement())
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  playlistId Int
+  song       Song     @relation(fields: [songId], references: [id])
+  songId     Int
+  position   Int      @default(0) // ترتيب الأغاني داخل الـ playlist
+}

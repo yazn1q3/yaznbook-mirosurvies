@@ -4,7 +4,9 @@ import Decimal from "decimal.js";
 import Fraction from "fraction.js";
 import Parser from "rss-parser";
 import cors from "cors";  // <--- ده المطلوب
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -48,6 +50,65 @@ class SimpleMath {
 }
 
 const calc = new SimpleMath();
+
+
+// === POST /store ===
+// إنشاء متجر جديد
+app.post("/store", async (req, res) => {
+  try {
+    const { userId, title, description, links } = req.body;
+    const userIdInt = Number(userId);
+
+    if (isNaN(userIdInt)) {
+      return res.status(400).json({ error: "Invalid user id" });
+    }
+
+    const existing = await prisma.store.findUnique({
+      where: { ownerId: userIdInt },
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: "User already has a store" });
+    }
+
+    const store = await prisma.store.create({
+      data: {
+        title,
+        description,
+        links,
+        owner: { connect: { id: userIdInt } },
+      },
+    });
+
+    res.status(201).json(store);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create store" });
+  }
+});
+
+// === GET /store ===
+// جلب متجر + منتجاته
+app.get("/store", async (req, res) => {
+  try {
+    const userId = Number(req.query.userId);
+
+    if (isNaN(userId)) return res.status(400).json({ error: "Invalid user id" });
+
+    const store = await prisma.store.findUnique({
+      where: { ownerId: userId },
+      include: { products: true },
+    });
+
+    if (!store) return res.status(404).json({ error: "Store not found" });
+
+    res.json(store);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch store" });
+  }
+});
+
 
 // === Route: /api/calc ===
 app.post("/api/calc", (req, res) => {

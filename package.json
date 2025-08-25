@@ -10,12 +10,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^6.14.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "decimal.js": "^10.6.0",
     "expr-eval": "^2.0.2",
     "express": "^5.1.0",
     "fraction.js": "^5.3.4",
+    "prisma": "^6.14.0",
     "rss-parser": "^3.13.0"
   }
 }
