@@ -159,6 +159,44 @@ app.put("/boards/:id", async (req, res) => {
   }
 });
 
+app.get("/posts/:id", async (req, res) => {
+  try {
+    const postId = parseInt(req.params.id, 10);
+
+    if (isNaN(postId)) {
+      return res.status(400).json({ error: "Invalid post ID" });
+    }
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+        likes: {
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const response = {
+      ...post,
+      likesCount: post.likes.length,
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch post" });
+  }
+});
+
 app.get("/profile/:id", async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
@@ -168,15 +206,14 @@ app.get("/profile/:id", async (req, res) => {
       where: { id: userId },
       select: {
         id: true,
+        tabadls: true,
         name: true,
         email: true,
         description: true,
         profileImageUrl: true,
         coverImageUrl: true,
-        playlists: { select: { id: true, title: true } },
-        pagesOwned: { select: { id: true, title: true } },
-        products: { select: { id: true, name: true, price: true } },
-        posts: { select: { id: true, title: true, content: true } },
+        pagesOwned: true,
+        products: true,
         createdAt: true,
       },
     });
