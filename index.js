@@ -110,7 +110,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.use("/board", boardRoutes);
+app.use("/boards", boardRoutes);
 
 
 // === POST /store ===
@@ -199,23 +199,6 @@ app.get("/api/products", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch products", details: String(err) });
-  }
-});
-
-app.put("/boards/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, description } = req.body;
-
-    const board = await prisma.board.update({
-      where: { id: parseInt(id) },
-      data: { title, description },
-    });
-
-    res.json(board);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Something went wrong" });
   }
 });
 
