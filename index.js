@@ -5,6 +5,7 @@ import Fraction from "fraction.js";
 import Parser from "rss-parser";
 import cors from "cors";  // <--- ده المطلوب
 import { hash } from "bcryptjs";
+import boardRoutes from "./routes/board.js";
 import { PrismaClient } from "@prisma/client";
 import cartRoutes from "./routes/cart.js";
 import NodeCache from "node-cache";
@@ -70,6 +71,8 @@ function generateRecoveryPhrase(numWords = 6) {
 
 app.use("/cart", cartRoutes);
 
+
+
 app.post("/register", async (req, res) => {
   try {
     const { email, password, name } = req.body;
@@ -107,7 +110,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-
+app.use("/board", boardRoutes);
 
 
 // === POST /store ===
