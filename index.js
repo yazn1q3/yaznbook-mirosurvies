@@ -4,6 +4,7 @@ import Decimal from "decimal.js";
 import Fraction from "fraction.js";
 import Parser from "rss-parser";
 import cors from "cors";  // <--- ده المطلوب
+import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import NodeCache from "node-cache";
 const cache = new NodeCache({ stdTTL: 30, checkperiod: 60 }); // cache 30s
@@ -51,6 +52,59 @@ class SimpleMath {
 }
 
 const calc = new SimpleMath();
+
+const wordList = [
+  "قلم","كتاب","شمس","قمر","بحر","ريح","نار","ورد","نجم","شجرة",
+  "سماء","ماء","صخر","حصان","جبل","طيور","مطر","ثلج"
+];
+
+function generateRecoveryPhrase(numWords = 6) {
+  let phrase = [];
+  for (let i = 0; i < numWords; i++) {
+    const index = Math.floor(Math.random() * wordList.length);
+    phrase.push(wordList[index]);
+  }
+  return phrase.join(" ");
+}
+
+app.post("/register", async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    if (!email || !password || !name) {
+      return res.status(400).json({ message: "كل الحقول مطلوبة" });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ message: "البريد الإلكتروني مستخدم مسبقًا" });
+    }
+
+    const hashedPassword = await hash(password, 10);
+    const recoveryPhrase = generateRecoveryPhrase(6);
+
+    await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        recoveryPhrase,
+        mfsVerified: false,
+      },
+    });
+
+    return res.status(201).json({
+      message: "تم إنشاء الحساب",
+      recoveryPhrase,
+    });
+
+  } catch (err) {
+    console.error("Register error:", err);
+    return res.status(500).json({ message: "حدث خطأ داخلي في الخادم" });
+  }
+});
+
+
 
 
 // === POST /store ===
