@@ -6,7 +6,7 @@ import Parser from "rss-parser";
 import cors from "cors";  // <--- ده المطلوب
 import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
-import {cartRoutes} from "./lib/cart.js";
+import {cartRoutes} from "./routes/cart.js";
 import NodeCache from "node-cache";
 const cache = new NodeCache({ stdTTL: 30, checkperiod: 60 }); // cache 30s
 const prisma = new PrismaClient();
