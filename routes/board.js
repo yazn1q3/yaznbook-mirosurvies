@@ -4,23 +4,26 @@ import { getUserIdFromBearerHeader } from "../lib/auth.js";
 
 const router = express.Router();
 
-// GET /boards/:id
+// ================== GET BOARD ==================
 router.get("/:id", async (req, res) => {
   try {
     const userId = getUserIdFromBearerHeader(req);
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const boardId = parseInt(req.params.id);
+
     const board = await prisma.board.findUnique({
       where: { id: boardId },
       include: {
-        lists: {
-          include: { cards: true }
-        }
+        lists: { include: { cards: true } }
       }
     });
 
     if (!board) return res.status(404).json({ error: "Board not found" });
+
+    // تأكد إن المستخدم هو المالك
+    if (board.ownerId !== userId) return res.status(403).json({ error: "Forbidden" });
+
     res.json(board);
   } catch (err) {
     console.error(err);
@@ -28,7 +31,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// PUT /boards/:id (update board title or description)
+// ================== UPDATE BOARD ==================
 router.put("/:id", async (req, res) => {
   try {
     const userId = getUserIdFromBearerHeader(req);
@@ -36,6 +39,11 @@ router.put("/:id", async (req, res) => {
 
     const boardId = parseInt(req.params.id);
     const { title, description } = req.body;
+
+    // تحقق إن المستخدم هو المالك
+    const board = await prisma.board.findUnique({ where: { id: boardId } });
+    if (!board) return res.status(404).json({ error: "Board not found" });
+    if (board.ownerId !== userId) return res.status(403).json({ error: "Forbidden" });
 
     const updated = await prisma.board.update({
       where: { id: boardId },
@@ -49,13 +57,25 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// POST /boards/lists (add new list)
+// ================== CREATE LIST ==================
 router.post("/lists", async (req, res) => {
   try {
+    const userId = getUserIdFromBearerHeader(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     const { boardId, title } = req.body;
-    const newList = await prisma.list.create({
-      data: { boardId, title }
+
+    // optional: تحقق من وجود الـ Board
+    if (boardId) {
+      const board = await prisma.board.findUnique({ where: { id: boardId } });
+      if (!board) return res.status(400).json({ error: "Board not found" });
+      if (board.ownerId !== userId) return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const newList = await prisma.cardList.create({
+      data: { title, boardId: boardId || null, ownerId: userId }
     });
+
     res.json(newList);
   } catch (err) {
     console.error(err);
@@ -63,11 +83,18 @@ router.post("/lists", async (req, res) => {
   }
 });
 
-// DELETE /boards/lists/:id
+// ================== DELETE LIST ==================
 router.delete("/lists/:id", async (req, res) => {
   try {
+    const userId = getUserIdFromBearerHeader(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     const listId = parseInt(req.params.id);
-    await prisma.list.delete({ where: { id: listId } });
+    const list = await prisma.cardList.findUnique({ where: { id: listId } });
+    if (!list) return res.status(404).json({ error: "List not found" });
+    if (list.ownerId !== userId) return res.status(403).json({ error: "Forbidden" });
+
+    await prisma.cardList.delete({ where: { id: listId } });
     res.json({ message: "Deleted list" });
   } catch (err) {
     console.error(err);
@@ -75,13 +102,22 @@ router.delete("/lists/:id", async (req, res) => {
   }
 });
 
-// POST /boards/cards (add card)
+// ================== CREATE CARD ==================
 router.post("/cards", async (req, res) => {
   try {
+    const userId = getUserIdFromBearerHeader(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     const { listId, title, content } = req.body;
+
+    const list = await prisma.cardList.findUnique({ where: { id: listId } });
+    if (!list) return res.status(404).json({ error: "List not found" });
+    if (list.ownerId !== userId) return res.status(403).json({ error: "Forbidden" });
+
     const card = await prisma.card.create({
-      data: { listId, title, content }
+      data: { listId, title, content, ownerId: userId }
     });
+
     res.json(card);
   } catch (err) {
     console.error(err);
@@ -89,15 +125,24 @@ router.post("/cards", async (req, res) => {
   }
 });
 
-// PUT /boards/cards/:id
+// ================== UPDATE CARD ==================
 router.put("/cards/:id", async (req, res) => {
   try {
+    const userId = getUserIdFromBearerHeader(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     const cardId = parseInt(req.params.id);
-    const { content } = req.body;
+    const { title, content } = req.body;
+
+    const card = await prisma.card.findUnique({ where: { id: cardId } });
+    if (!card) return res.status(404).json({ error: "Card not found" });
+    if (card.ownerId !== userId) return res.status(403).json({ error: "Forbidden" });
+
     const updated = await prisma.card.update({
       where: { id: cardId },
-      data: { content }
+      data: { title, content }
     });
+
     res.json(updated);
   } catch (err) {
     console.error(err);
@@ -105,10 +150,17 @@ router.put("/cards/:id", async (req, res) => {
   }
 });
 
-// DELETE /boards/cards/:id
+// ================== DELETE CARD ==================
 router.delete("/cards/:id", async (req, res) => {
   try {
+    const userId = getUserIdFromBearerHeader(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     const cardId = parseInt(req.params.id);
+    const card = await prisma.card.findUnique({ where: { id: cardId } });
+    if (!card) return res.status(404).json({ error: "Card not found" });
+    if (card.ownerId !== userId) return res.status(403).json({ error: "Forbidden" });
+
     await prisma.card.delete({ where: { id: cardId } });
     res.json({ message: "Deleted card" });
   } catch (err) {
