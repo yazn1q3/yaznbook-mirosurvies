@@ -4,6 +4,33 @@ import { getUserIdFromBearerHeader } from "../lib/auth.js";
 
 const router = express.Router();
 
+// ================== CREATE BOARD ==================
+router.post("/", async (req, res) => {
+  try {
+    const userId = getUserIdFromBearerHeader(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const { title, description } = req.body;
+
+    if (!title) return res.status(400).json({ error: "Title is required" });
+
+    const newBoard = await prisma.board.create({
+      data: {
+        title,
+        description: description || null,
+        ownerId: userId
+      }
+    });
+
+    res.json(newBoard);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create board" });
+  }
+});
+
+
+
 // ================== GET BOARD ==================
 router.get("/:id", async (req, res) => {
   try {
