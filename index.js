@@ -338,6 +338,126 @@ app.get("/api/news", async (req, res) => {
   }
 });
 
+// Middleware للتحقق من Bearer Token (هنا مجرد userId)
+function authMiddleware(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: "Unauthorized" });
+  const userId = auth.split(" ")[1];
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+  req.userId = userId;
+  next();
+}
+
+// Get profile by user ID
+app.get("/user/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      include: {
+        products: true,
+        productLists: { include: { products: true } },
+      },
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const store = await prisma.store.findMany({
+      where: { userId: Number(id) },
+    });
+
+    const boards = await prisma.board.findMany({
+      where: { userId: Number(id) },
+      include: { lists: true },
+    });
+
+    res.json({ ...user, store, boards });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Update profile images
+app.put("/users/:id/updateImage", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { profileImageUrl, coverImageUrl } = req.body;
+
+  if (req.userId !== id) return res.status(403).json({ error: "Forbidden" });
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: Number(id) },
+      data: { profileImageUrl, coverImageUrl },
+    });
+    res.json(updatedUser);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update images" });
+  }
+});
+
+// Add product to list
+app.post("/lists/:id/addProduct", async (req, res) => {
+  const { id } = req.params;
+  const { productId } = req.body;
+
+  try {
+    const list = await prisma.productList.update({
+      where: { id: Number(id) },
+      data: { products: { connect: { id: Number(productId) } } },
+      include: { products: true },
+    });
+    res.json(list);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to add product" });
+  }
+});
+
+// Create new list
+app.post("/lists", authMiddleware, async (req, res) => {
+  const { title } = req.body;
+  try {
+    const newList = await prisma.productList.create({
+      data: {
+        title,
+        user: { connect: { id: Number(req.userId) } },
+      },
+    });
+    res.json(newList);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create list" });
+  }
+});
+
+// Delete list
+app.delete("/lists/:id", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.productList.delete({ where: { id: Number(id) } });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete list" });
+  }
+});
+
+// Get boards for user
+app.get("/boards/user/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const boards = await prisma.board.findMany({
+      where: { userId: Number(id) },
+      include: { lists: true },
+    });
+    res.json(boards);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch boards" });
+  }
+});
+
 // === Start server with Render PORT ===
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
