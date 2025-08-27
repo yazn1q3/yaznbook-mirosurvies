@@ -17,25 +17,37 @@ const bannedWords = [
   "الاردن","الإردن","الأردن","جوالي","افا","كس","قضيب","عضو","مؤخرة","مؤخرتك","مؤخرتي"
 ];
 
-// ================== GET PRODUCT BY ID ==================
 router.get("/:id", async (req, res) => {
   try {
     const productId = parseInt(req.params.id);
     if (isNaN(productId)) return res.status(400).json({ error: "رقم المنتج غير صالح" });
 
-    // جلب المنتج كامل بدون أي تحديد للحقول
     const product = await prisma.product.findUnique({
       where: { id: productId },
+      include: {
+        comments: {
+          orderBy: { createdAt: "desc" }, // ترتيب حسب الأحدث
+          include: {
+            user: { select: { id: true, name: true, email: true, profileImageUrl: true } }
+          }
+        },
+        seller: {
+          include: {
+            store: true // لو عايز بيانات المتجر
+          }
+        }
+      },
     });
 
     if (!product) return res.status(404).json({ error: "المنتج غير موجود" });
 
-    res.json({ product });
+    res.json(product);
   } catch (err) {
     console.error("خطأ:", err);
     res.status(500).json({ error: "حدث خطأ أثناء جلب المنتج" });
   }
 });
+
 
 
 // ================== CREATE PRODUCT ==================
