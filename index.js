@@ -7,6 +7,7 @@ import cors from "cors";  // <--- ده المطلوب
 import { hash } from "bcryptjs";
 import boardRoutes from "./routes/board.js";
 import { PrismaClient } from "@prisma/client";
+import productRouter from "./routes/product.js"; // تأكد المسار صح
 import cartRoutes from "./routes/cart.js";
 import NodeCache from "node-cache";
 const cache = new NodeCache({ stdTTL: 30, checkperiod: 60 }); // cache 30s
@@ -71,7 +72,7 @@ function generateRecoveryPhrase(numWords = 6) {
 
 app.use("/cart", cartRoutes);
 
-
+app.use("/products", productRouter); // أي طلب يبدأ بـ /products هيبقى تحت productRouter
 
 app.post("/register", async (req, res) => {
   try {
