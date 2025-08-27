@@ -161,38 +161,36 @@ app.post("/store", async (req, res) => {
 
 
 app.get("/api/products", async (req, res) => {
-  const page = parseInt(typeof req.query.page === 'string' ? req.query.page : '1', 10) || 1;
   const limit = parseInt(typeof req.query.limit === 'string' ? req.query.limit : '10', 10) || 10;
-  const skip = (page - 1) * limit;
+  const cursor = req.query.cursor ? { id: parseInt(req.query.cursor, 10) } : undefined;
 
-  const cacheKey = `products_page${page}_limit${limit}`;
+  const cacheKey = `products_cursor${req.query.cursor || 'start'}_limit${limit}`;
   const cached = cache.get(cacheKey);
   if (cached) return res.json(cached);
 
   try {
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          title: true,
-          price: true,
-          image: true,
-          seller: { select: { id: true, name: true } },
-          comments: { select: { id: true, content: true, createdAt: true } },
-        },
-      }),
-      prisma.product.count(),
-    ]);
+    const products = await prisma.product.findMany({
+      orderBy: { createdAt: 'desc' },
+      cursor,
+      skip: cursor ? 1 : 0, // نتجاوز الـ cursor نفسه
+      take: limit,
+      select: {
+        id: true,
+        title: true,
+        price: true,
+        image: true,
+        seller: { select: { id: true, name: true } },
+        comments: { select: { id: true, content: true, createdAt: true } },
+      },
+    });
+
+    const lastProductId = products.length ? products[products.length - 1].id : null;
 
     const response = {
       products,
-      page,
+      nextCursor: lastProductId, // الكيرسور للصفحة الجاية
       limit,
-      totalPages: Math.ceil(total / limit),
-      totalItems: total,
+      hasMore: products.length === limit,
     };
 
     cache.set(cacheKey, response);
@@ -202,6 +200,7 @@ app.get("/api/products", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch products", details: String(err) });
   }
 });
+
 
 app.get("/posts/:id", async (req, res) => {
   try {
