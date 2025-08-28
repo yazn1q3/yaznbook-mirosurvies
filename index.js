@@ -430,12 +430,13 @@ app.post("/lists", authMiddleware, async (req, res) => {
     const userExists = await prisma.user.findUnique({ where: { id: userId } });
     if (!userExists) return res.status(404).json({ error: "User not found" });
 
-    const newList = await prisma.productList.create({
-      data: {
-        title,
-        user: { connect: { id: userId } },
-      },
-    });
+ const newList = await prisma.productList.create({
+  data: {
+    title,
+    owner: { connect: { id: Number(req.userId) } }, // بدل user
+  },
+});
+
 
     res.json(newList);
   } catch (err) {
