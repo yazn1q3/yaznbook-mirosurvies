@@ -342,11 +342,14 @@ app.get("/api/news", async (req, res) => {
 function authMiddleware(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: "Unauthorized" });
-  const userId = auth.split(" ")[1];
+
+  const userId = Number(auth.split(" ")[1]); // حوّلها لرقم
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
   req.userId = userId;
   next();
 }
+
 
 // Get profile by user ID
 app.get("/user/:id", async (req, res) => {
