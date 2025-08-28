@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: "*", // ❗ في الإنتاج خلي الدومين الحقيقي
+  origin: "*", 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
