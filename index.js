@@ -385,7 +385,8 @@ app.put("/users/:id/updateImage", authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { profileImageUrl, coverImageUrl } = req.body;
 
-  if (req.userId !== id) return res.status(403).json({ error: "Forbidden" });
+if (Number(req.userId) !== Number(id)) 
+  return res.status(403).json({ error: "Forbidden" });
 
   try {
     const updatedUser = await prisma.user.update({
