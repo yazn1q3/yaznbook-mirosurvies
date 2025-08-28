@@ -14,7 +14,11 @@ const cache = new NodeCache({ stdTTL: 30, checkperiod: 60 }); // cache 30s
 const prisma = new PrismaClient();
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: "*", // ❗ في الإنتاج خلي الدومين الحقيقي
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 // === SimpleMath ===
 class SimpleMath {
   constructor() {
