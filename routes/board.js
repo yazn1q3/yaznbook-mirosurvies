@@ -4,6 +4,24 @@ import { getUserIdFromBearerHeader } from "../lib/auth.js";
 
 const router = express.Router();
 
+// ================== GET ALL BOARDS FOR USER ==================
+router.get("/user/:id", async (req, res) => {
+  try {
+    const userId = getUserIdFromBearerHeader(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const boards = await prisma.board.findMany({
+      where: { ownerId: userId }
+    });
+
+    res.json(boards);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch boards" });
+  }
+});
+
+
 // ================== CREATE BOARD ==================
 router.post("/", async (req, res) => {
   try {
