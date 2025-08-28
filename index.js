@@ -414,22 +414,33 @@ app.post("/lists/:id/addProduct", async (req, res) => {
   }
 });
 
-// Create new list
 app.post("/lists", authMiddleware, async (req, res) => {
   const { title } = req.body;
+  const userId = Number(req.userId);
+
+  if (!title || !title.trim()) {
+    return res.status(400).json({ error: "Title is required" });
+  }
+
   try {
+    // تحقق إن الـ user موجود
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) return res.status(404).json({ error: "User not found" });
+
     const newList = await prisma.productList.create({
       data: {
         title,
-        user: { connect: { id: Number(req.userId) } },
+        user: { connect: { id: userId } },
       },
     });
+
     res.json(newList);
   } catch (err) {
-    console.error(err);
+    console.error("Failed to create list:", err);
     res.status(500).json({ error: "Failed to create list" });
   }
 });
+
 
 // Delete list
 app.delete("/lists/:id", authMiddleware, async (req, res) => {
