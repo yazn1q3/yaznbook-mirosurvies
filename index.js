@@ -74,6 +74,30 @@ function generateRecoveryPhrase(numWords = 6) {
   return phrase.join(" ");
 }
 
+app.get("/users/:id/notifications", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  // تأكد إن الـ token يطابق الـ param
+  if (Number(req.userId) !== Number(id)) 
+    return res.status(403).json({ message: "Forbidden" });
+
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { userId: Number(id) },
+      orderBy: { createdAt: "desc" },
+      include: {
+        product: true,
+        comment: true,
+      },
+    });
+
+    res.json(notifications);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch notifications" });
+  }
+});
+
 app.use("/cart", cartRoutes);
 
 app.use("/products", productRouter); // أي طلب يبدأ بـ /products هيبقى تحت productRouter
