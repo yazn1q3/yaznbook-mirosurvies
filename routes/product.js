@@ -35,7 +35,8 @@ router.get("/:id", async (req, res) => {
           include: {
             store: true // لو عايز بيانات المتجر
           }
-        }
+        },
+        views: true,
       },
     });
 
