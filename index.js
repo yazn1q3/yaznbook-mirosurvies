@@ -58,7 +58,14 @@ class SimpleMath {
   }
 }
 
-
+const redis = createClient({
+    username: 'default',
+    password: 'iYHomheaoenuU82qRwFKpt9LKxmrAogS',
+    socket: {
+        host: 'redis-14106.c321.us-east-1-2.ec2.redns.redis-cloud.com',
+        port: 14106
+    }
+});
 
 
 const calc = new SimpleMath();
@@ -84,6 +91,16 @@ app.get("/users/:id/notifications", authMiddleware, async (req, res) => {
   if (Number(req.userId) !== Number(id)) 
     return res.status(403).json({ message: "Forbidden" });
 
+  const cacheKey = `user:${id}:notifications`;  // Create a unique key for the cache
+
+  // Try fetching the data from Redis cache
+  const cachedNotifications = await redis.get(cacheKey);
+  
+  if (cachedNotifications) {
+    // If notifications are found in cache, return them directly
+    return res.json(JSON.parse(cachedNotifications));
+  }
+
   try {
     const notifications = await prisma.notification.findMany({
       where: { userId: Number(id) },
@@ -94,6 +111,10 @@ app.get("/users/:id/notifications", authMiddleware, async (req, res) => {
       },
     });
 
+    // Cache the notifications for 60 seconds
+    redis.setex(cacheKey, 60, JSON.stringify(notifications));
+
+    // Return the fetched notifications
     res.json(notifications);
   } catch (err) {
     console.error(err);
@@ -195,15 +216,21 @@ app.get("/api/products", async (req, res) => {
   const limit = parseInt(typeof req.query.limit === 'string' ? req.query.limit : '10', 10) || 10;
   const cursor = req.query.cursor ? { id: parseInt(req.query.cursor, 10) } : undefined;
 
-  const cacheKey = `products_cursor${req.query.cursor || 'start'}_limit${limit}`;
-  const cached = cache.get(cacheKey);
-  if (cached) return res.json(cached);
+  const cacheKey = `products_cursor${req.query.cursor || 'start'}_limit${limit}`; // Create a unique cache key for the request
+
+  // Try fetching the cached data from Redis
+  const cached = await redis.get(cacheKey);
+  
+  if (cached) {
+    // If data is found in Redis, return it as the response
+    return res.json(JSON.parse(cached));
+  }
 
   try {
     const products = await prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
       cursor,
-      skip: cursor ? 1 : 0, // نتجاوز الـ cursor نفسه
+      skip: cursor ? 1 : 0, // Skip the cursor itself
       take: limit,
       select: {
         id: true,
@@ -220,12 +247,15 @@ app.get("/api/products", async (req, res) => {
 
     const response = {
       products,
-      nextCursor: lastProductId, // الكيرسور للصفحة الجاية
+      nextCursor: lastProductId, // Cursor for next page
       limit,
       hasMore: products.length === limit,
     };
 
-    cache.set(cacheKey, response);
+    // Cache the response in Redis for 60 seconds (TTL)
+    await redis.setex(cacheKey, 60, JSON.stringify(response));
+
+    // Return the fetched products as the response
     res.json(response);
   } catch (err) {
     console.error(err);

@@ -2,7 +2,7 @@
   "name": "b-y",
   "version": "1.0.0",
   "main": "index.js",
-    "type": "module",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
@@ -14,11 +14,13 @@
     "@prisma/client": "^6.14.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
+    "bull": "^4.16.5",
     "cors": "^2.8.5",
     "decimal.js": "^10.6.0",
     "expr-eval": "^2.0.2",
     "express": "^5.1.0",
     "fraction.js": "^5.3.4",
+    "ioredis": "^5.7.0",
     "node-cache": "^5.1.2",
     "prisma": "^6.14.0",
     "rss-parser": "^3.13.0"
