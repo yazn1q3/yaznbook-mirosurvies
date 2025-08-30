@@ -268,7 +268,7 @@ app.get("/api/products", async (req, res) => {
     };
 
     // Cache the response in Redis for 60 seconds (TTL)
-await redis.set(cacheKey, JSON.stringify(response), { EX: 60 });
+await redis.set(cacheKey, JSON.stringify(response), { EX: 150 });
 
     // Return the fetched products as the response
     res.json(response);
@@ -457,19 +457,36 @@ app.get("/user/:id", async (req, res) => {
   }
 });
 
-// Update profile images
 app.put("/users/:id/updateImage", authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { profileImageUrl, coverImageUrl } = req.body;
 
-if (Number(req.userId) !== Number(id)) 
-  return res.status(403).json({ error: "Forbidden" });
+  if (Number(req.userId) !== Number(id)) 
+    return res.status(403).json({ error: "Forbidden" });
 
   try {
+    // تحديد المفاتيح لصور المستخدم
+    const profileImageCacheKey = `user:${id}:profileImageUrl`;
+    const coverImageCacheKey = `user:${id}:coverImageUrl`;
+
+    // تحقق من الصورة في Redis قبل إجراء التحديث
+    const cachedProfileImage = await redis.get(profileImageCacheKey);
+    const cachedCoverImage = await redis.get(coverImageCacheKey);
+
+    if (cachedProfileImage === profileImageUrl || cachedCoverImage === coverImageUrl) {
+      return res.status(400).json({ error: "The image is already set to the same URL" });
+    }
+
+    // إذا لم تكن الصورة موجودة في Redis أو تم تحديثها، قم بتحديث قاعدة البيانات
     const updatedUser = await prisma.user.update({
       where: { id: Number(id) },
       data: { profileImageUrl, coverImageUrl },
     });
+
+    // تخزين الصور في Redis لفترة محدودة (مثلاً 1 ساعة)
+    await redis.setex(profileImageCacheKey, 3600, profileImageUrl);
+    await redis.setex(coverImageCacheKey, 3600, coverImageUrl);
+
     res.json(updatedUser);
   } catch (err) {
     console.error(err);
@@ -608,7 +625,7 @@ app.get("/boards/user/:id", async (req, res) => {
     });
 
     // تخزين اللوحات في Redis لمدة 60 ثانية
-    redis.setex(cacheKey, 60, JSON.stringify(boards));
+    redis.setex(cacheKey, 900, JSON.stringify(boards));
 
     // إرجاع اللوحات التي تم جلبها من قاعدة البيانات
     res.json(boards);
