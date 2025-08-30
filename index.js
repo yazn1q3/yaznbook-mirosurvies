@@ -58,56 +58,7 @@ class SimpleMath {
   }
 }
 
-app.get("/me/:id", authMiddleware, async (req, res) => {
-  const { id } = req.params;
 
-  try {
-    // جلب بيانات المستخدم مع جميع العلاقات المرتبطة به
-const user = await prisma.user.findUnique({
-  where: { id: Number(id) },
-  include: {
-    products: true,
-    productLists: true,
-    postcomments: true,
-    likedPosts: true,
-    pagesOwned: true,
-    pagesFollowed: true,
-    playlists: true,
-    songs: true,
-    wantInReturnComments: true,
-    tabadls: true,
-    cardLists: true,
-    cards: true,
-    notifications: true,
-    orders: true,
-    searchHistory: true,
-    productViews: true,
-    messagesSent: true,
-    messagesReceived: true,
-    store: true,
-    profiles: true,
-    boards: true,
-    reviews: true,
-    cart: true,
-    mfsVerified: true,
-    recoveryPhrase: true,
-    comments: true,
-    posts: true,
-    applications: true,
-    reports: true,
-  },
-});
-
-
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    // إرسال البيانات المطلوبة للمستخدم
-    res.json(user);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
 
 
 const calc = new SimpleMath();
@@ -537,6 +488,57 @@ app.delete("/lists/:id", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to delete list" });
+  }
+});
+
+app.get("/me/:id", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // جلب بيانات المستخدم مع جميع العلاقات المرتبطة به
+const user = await prisma.user.findUnique({
+  where: { id: Number(id) },
+  include: {
+    products: true,
+    productLists: true,
+    postcomments: true,
+    likedPosts: true,
+    pagesOwned: true,
+    pagesFollowed: true,
+    playlists: true,
+    songs: true,
+    wantInReturnComments: true,
+    tabadls: true,
+    cardLists: true,
+    cards: true,
+    notifications: true,
+    orders: true,
+    searchHistory: true,
+    productViews: true,
+    messagesSent: true,
+    messagesReceived: true,
+    store: true,
+    profiles: true,
+    boards: true,
+    reviews: true,
+    cart: true,
+    mfsVerified: true,
+    recoveryPhrase: true,
+    comments: true,
+    posts: true,
+    applications: true,
+    reports: true,
+  },
+});
+
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // إرسال البيانات المطلوبة للمستخدم
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
