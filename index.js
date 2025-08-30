@@ -206,6 +206,7 @@ app.get("/api/products", async (req, res) => {
         id: true,
         title: true,
         price: true,
+        description: true,
         image: true,
         seller: { select: { id: true, name: true } },
         comments: { select: { id: true, content: true, createdAt: true } },
