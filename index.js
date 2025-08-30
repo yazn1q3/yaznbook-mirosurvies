@@ -587,20 +587,38 @@ const user = await prisma.user.findUnique({
   }
 });
 
-// Get boards for user
 app.get("/boards/user/:id", async (req, res) => {
   const { id } = req.params;
+  const cacheKey = `user:${id}:boards`; // المفتاح الفريد لتخزين اللوحات
+
   try {
+    // محاولة الحصول على البيانات من Redis
+    const cachedBoards = await redis.get(cacheKey);
+    
+    if (cachedBoards) {
+      // إذا كانت البيانات موجودة في Redis، إرجاعها مباشرة
+      console.log('Returning boards from cache');
+      return res.json(JSON.parse(cachedBoards));
+    }
+
+    // إذا لم تكن البيانات في Redis، نقوم بجلبها من قاعدة البيانات
     const boards = await prisma.board.findMany({
       where: { userId: Number(id) },
       include: { lists: true },
     });
+
+    // تخزين اللوحات في Redis لمدة 60 ثانية
+    redis.setex(cacheKey, 60, JSON.stringify(boards));
+
+    // إرجاع اللوحات التي تم جلبها من قاعدة البيانات
     res.json(boards);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch boards" });
   }
 });
+
 
 // === Start server with Render PORT ===
 const PORT = process.env.PORT || 3000;
