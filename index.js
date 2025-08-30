@@ -61,10 +61,6 @@ class SimpleMath {
 app.get("/me/:id", authMiddleware, async (req, res) => {
   const { id } = req.params;
 
-  // تحقق من أن الـ token في الـ request يتوافق مع الـ userId
-  if (Number(req.userId) !== Number(id)) 
-    return res.status(403).json({ message: "Forbidden" });
-
   try {
     // جلب بيانات المستخدم مع جميع العلاقات المرتبطة به
     const user = await prisma.user.findUnique({
