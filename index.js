@@ -63,19 +63,41 @@ app.get("/me/:id", authMiddleware, async (req, res) => {
 
   try {
     // جلب بيانات المستخدم مع جميع العلاقات المرتبطة به
-    const user = await prisma.user.findUnique({
-      where: { id: Number(id) },
-      include: {
-        // تضمين كل العلاقات التي تخص المستخدم
-        ...Object.fromEntries(
-          Object.keys(prisma.user._count).map(key => [
-            key, 
-            true
-          ])
-        ),
-        // أو يمكن استخدام include: true إذا كان كل شيء متصل بالمستخدم
-      },
-    });
+const user = await prisma.user.findUnique({
+  where: { id: Number(id) },
+  include: {
+    products: true,
+    productLists: true,
+    postcomments: true,
+    likedPosts: true,
+    pagesOwned: true,
+    pagesFollowed: true,
+    playlists: true,
+    songs: true,
+    wantInReturnComments: true,
+    tabadls: true,
+    cardLists: true,
+    cards: true,
+    notifications: true,
+    orders: true,
+    searchHistory: true,
+    productViews: true,
+    messagesSent: true,
+    messagesReceived: true,
+    store: true,
+    profiles: true,
+    boards: true,
+    reviews: true,
+    cart: true,
+    mfsVerified: true,
+    recoveryPhrase: true,
+    comments: true,
+    posts: true,
+    applications: true,
+    reports: true,
+  },
+});
+
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
