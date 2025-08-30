@@ -60,15 +60,27 @@ class SimpleMath {
   }
 }
 
+// تأكد من أن العميل يتم إنشاؤه قبل الاستخدام
 const redis = createClient({
-    username: 'default',
-    password: 'iYHomheaoenuU82qRwFKpt9LKxmrAogS',
-    socket: {
-        host: 'redis-14106.c321.us-east-1-2.ec2.redns.redis-cloud.com',
-        port: 14106
-    }
+  username: 'default',
+  password: 'iYHomheaoenuU82qRwFKpt9LKxmrAogS',
+  socket: {
+    host: 'redis-14106.c321.us-east-1-2.ec2.redns.redis-cloud.com',
+    port: 14106,
+  },
 });
 
+// تأكد من الاتصال بـ Redis بعد إنشائه
+redis.connect().catch(console.error);
+
+// تأكد من إدارة الاتصال بشكل صحيح
+redis.on('connect', () => {
+  console.log('Connected to Redis');
+});
+
+redis.on('error', (err) => {
+  console.error('Redis error:', err);
+});
 
 const calc = new SimpleMath();
 
