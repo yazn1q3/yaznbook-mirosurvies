@@ -10,6 +10,8 @@ import { PrismaClient } from "@prisma/client";
 import productRouter from "./routes/product.js"; // تأكد المسار صح
 import cartRoutes from "./routes/cart.js";
 import NodeCache from "node-cache";
+import { createClient } from 'redis'; // استيراد createClient من redis
+
 const cache = new NodeCache({ stdTTL: 30, checkperiod: 60 }); // cache 30s
 const prisma = new PrismaClient();
 const app = express();
