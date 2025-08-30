@@ -126,7 +126,8 @@ app.get("/users/:id/notifications", authMiddleware, async (req, res) => {
     });
 
     // Cache the notifications for 60 seconds
-    redis.setex(cacheKey, 60, JSON.stringify(notifications));
+// Cache the notifications for 60 seconds
+await redis.set(cacheKey, JSON.stringify(notifications), { EX: 60 });
 
     // Return the fetched notifications
     res.json(notifications);
@@ -267,7 +268,7 @@ app.get("/api/products", async (req, res) => {
     };
 
     // Cache the response in Redis for 60 seconds (TTL)
-    await redis.setex(cacheKey, 60, JSON.stringify(response));
+await redis.set(cacheKey, JSON.stringify(response), { EX: 60 });
 
     // Return the fetched products as the response
     res.json(response);
